@@ -113,7 +113,6 @@ All config via env vars with `GATEWAY_` prefix, parsed by `kelseyhightower/envco
 
 ## Gotchas
 
-- **CGO required**: The Dockerfile uses `CGO_ENABLED=1` because `mattn/go-sqlite3` requires CGO. Builds on Linux need GCC. The Docker runtime image is `debian:bookworm-slim` (not Alpine) for this reason.
 - **Streaming uses separate HTTP client**: `openai_like.go:ChatCompletionStream` creates a new `http.Client{}` without timeout for streaming — context cancellation handles timeouts, not the client's Timeout field.
 - **Async persistence**: Message persistence after chat/messages completion is fire-and-forget (`go h.persistMessages(...)`) using `context.Background()`, not the request context.
 - **Gemini models are hardcoded**: `GeminiProvider.ListModels` returns a static list of known models rather than calling the Gemini API, to avoid returning research-preview models.

@@ -20,14 +20,14 @@ import (
 	"github.com/tnotstar/go-ya/internal/providers"
 	"github.com/tnotstar/go-ya/internal/server"
 	"github.com/tnotstar/go-ya/internal/services"
-	gormlogger "gorm.io/gorm/logger"
+	gormlog "gorm.io/gorm/logger"
 )
 
-// ServeCommand returns the `serve` subcommand that starts the HTTP gateway.
+// ServeCommand returns the `serve` subcommand that starts the AI gateway.
 func ServeCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "serve",
-		Usage: "Start the AI Gateway HTTP server",
+		Usage: "Start the AI Gateway server",
 		Action: func(c *cli.Context) error {
 			cfg, err := config.Load()
 			if err != nil {
@@ -50,9 +50,9 @@ func ServeCommand() *cli.Command {
 			slog.SetDefault(logger)
 
 			// Open database.
-			logLevel := gormlogger.Warn
+			logLevel := gormlog.Warn
 			if cfg.LogLevel == "debug" {
-				logLevel = gormlogger.Info
+				logLevel = gormlog.Info
 			}
 			db, err := persistence.Open(cfg.DBDriver, cfg.DBDSN, logLevel)
 			if err != nil {

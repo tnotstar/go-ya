@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
+	gormlog "gorm.io/gorm/logger"
 
 	"github.com/tnotstar/go-ya/internal/config"
 	"github.com/tnotstar/go-ya/internal/persistence"
@@ -17,5 +17,5 @@ func openDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cli: config: %w", err)
 	}
-	return persistence.Open(cfg.DBDriver, cfg.DBDSN, gormlogger.Silent)
+	return persistence.Open(cfg.DBDriver, cfg.DBDSN, gormlog.Silent)
 }

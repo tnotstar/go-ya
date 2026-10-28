@@ -7,19 +7,16 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s -w" -o /gateway ./cmd/gateway
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /ya-server ./cmd/ya-server
 
 # ─── Runtime stage ────────────────────────────────────────────
-# Use debian-slim for CGO (sqlite3 requires it).
-FROM debian:bookworm-slim
+FROM alpine:latest
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+RUN apk --no-cache add ca-certificates
 
-COPY --from=builder /gateway /usr/local/bin/gateway
+COPY --from=builder /ya-server /usr/local/bin/ya-server
 
 EXPOSE 8080
 
-ENTRYPOINT ["/usr/local/bin/gateway"]
+ENTRYPOINT ["/usr/local/bin/ya-server"]
 CMD ["serve"]

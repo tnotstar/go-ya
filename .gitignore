@@ -24,6 +24,14 @@ profile.cov
 go.work
 go.work.sum
 
+# Built binary (Makefile output)
+/ya-server
+
+# Local SQLite database (dev) and WAL/SHM sidecar files
+gateway.db
+gateway.db-wal
+gateway.db-shm
+
 # env file
 .env
 
