@@ -1,0 +1,8 @@
+[project]
+name = "ya-client"
+version = "0.1.0"
+description = "Smoke-test client for the go-ya AI Gateway (OpenAI-compatible endpoints)"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+]
