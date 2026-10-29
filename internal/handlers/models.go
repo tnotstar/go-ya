@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -10,25 +11,31 @@ import (
 	"github.com/tnotstar/go-ya/internal/domain"
 	"github.com/tnotstar/go-ya/internal/persistence"
 	"github.com/tnotstar/go-ya/internal/providers"
+	"github.com/tnotstar/go-ya/internal/services"
 )
 
 // ModelsHandler handles GET /v1/models.
 type ModelsHandler struct {
 	provRepo *persistence.ProviderRepo
+	keyStore *services.KeyStore
 	registry *providers.Registry
 	logger   *slog.Logger
 }
 
-// NewModelsHandler returns a new ModelsHandler.
+// NewModelsHandler returns a ModelsHandler.
 func NewModelsHandler(
 	pr *persistence.ProviderRepo,
+	ks *services.KeyStore,
 	reg *providers.Registry,
 	logger *slog.Logger,
 ) *ModelsHandler {
-	return &ModelsHandler{provRepo: pr, registry: reg, logger: logger}
+	return &ModelsHandler{provRepo: pr, keyStore: ks, registry: reg, logger: logger}
 }
 
 // Handle responds with an aggregated list of models from all enabled providers.
+// A real API key is resolved per provider because remote providers (OpenAI,
+// OpenRouter, ...) require auth for ListModels; providers without stored keys
+// (e.g. local llama.cpp) are queried with an empty key instead of skipped.
 func (h *ModelsHandler) Handle(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -38,12 +45,23 @@ func (h *ModelsHandler) Handle(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to list providers")
 	}
 
-	var allModels []domain.Model
+	allModels := make([]domain.Model, 0)
 
 	for _, p := range enabledProviders {
-		// Build adapter with an empty key for ListModels (no auth needed for static lists).
-		// For providers needing auth (OpenAI, OpenRouter), we skip on error.
-		adapter, err := h.registry.Build(&p, "")
+		apiKey, _, err := h.keyStore.GetKey(ctx, p.ID)
+		if err != nil {
+			if !errors.Is(err, domain.ErrKeyNotFound) {
+				h.logger.WarnContext(ctx, "models: select key",
+					slog.String("provider", p.Name),
+					slog.String("error", err.Error()),
+				)
+				continue
+			}
+			// No keys stored: query unauthenticated (local providers).
+			apiKey = ""
+		}
+
+		adapter, err := h.registry.Build(&p, apiKey)
 		if err != nil {
 			continue
 		}

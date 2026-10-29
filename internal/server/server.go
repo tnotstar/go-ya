@@ -44,7 +44,7 @@ func New(cfg *config.Config, svc *Services, logger *slog.Logger) *echo.Echo {
 	// ── Handler construction ─────────────────────────────────────────────────
 	chatHandler := handlers.NewChatHandler(svc.Router, svc.Session, logger)
 	messagesHandler := handlers.NewMessagesHandler(svc.Router, svc.Session, logger)
-	modelsHandler := handlers.NewModelsHandler(svc.ProvRepo, svc.Registry, logger)
+	modelsHandler := handlers.NewModelsHandler(svc.ProvRepo, svc.KeyStore, svc.Registry, logger)
 
 	// ── Routes ───────────────────────────────────────────────────────────────
 	e.GET("/health", handlers.Health)

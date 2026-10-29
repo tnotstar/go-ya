@@ -130,6 +130,75 @@ func TestChatCompletion_Success(t *testing.T) {
 	}
 }
 
+func TestModelsEndpoint_ListsWithProviderKey(t *testing.T) {
+	e, _, _ := setupTestServer(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d. body: %s", http.StatusOK, rec.Code, rec.Body.String())
+	}
+
+	// Regression: data must be a JSON array, never null.
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(rec.Body.Bytes(), &raw); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if data := string(raw["data"]); data == "null" || data == "" {
+		t.Fatalf("data must be a JSON array, got: %s", data)
+	}
+
+	var res domain.ModelList
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if res.Object != "list" {
+		t.Errorf("expected object=list, got %s", res.Object)
+	}
+	if len(res.Data) != 1 || res.Data[0].ID != "mock:mock-model" {
+		t.Fatalf("expected mock:mock-model from mock provider, got: %+v", res.Data)
+	}
+	if res.Data[0].OwnedBy != "mock" {
+		t.Errorf("expected owned_by tagging with provider name, got %s", res.Data[0].OwnedBy)
+	}
+}
+
+func TestModelsEndpoint_ProviderWithoutKeysStillListed(t *testing.T) {
+	e, provRepo, _ := setupTestServer(t)
+
+	// A second, keyless provider (local-style) must not be skipped.
+	_ = provRepo.Create(context.Background(), &domain.Provider{
+		Name:    "mock-local",
+		Type:    domain.ProviderTypeMock,
+		Enabled: true,
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d. body: %s", http.StatusOK, rec.Code, rec.Body.String())
+	}
+
+	var res domain.ModelList
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(res.Data) != 2 {
+		t.Fatalf("expected one model per provider, got: %+v", res.Data)
+	}
+	owners := map[string]bool{}
+	for _, m := range res.Data {
+		owners[m.OwnedBy] = true
+	}
+	if !owners["mock"] || !owners["mock-local"] {
+		t.Errorf("expected models from both providers, got: %+v", res.Data)
+	}
+}
+
 func TestMessages_AnthropicEndpoint_Success(t *testing.T) {
 	e, _, _ := setupTestServer(t)
 
