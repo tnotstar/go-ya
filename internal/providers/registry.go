@@ -31,7 +31,7 @@ func NewRegistry(cfg *config.Config) *Registry {
 func (r *Registry) Build(p *domain.Provider, apiKey string) (Provider, error) {
 	switch p.Type {
 	case domain.ProviderTypeOpenAI:
-		return NewOpenAI(apiKey, r.client), nil
+		return NewOpenAIWithBaseURL(p.BaseURL, apiKey, r.client), nil
 
 	case domain.ProviderTypeOpenRouter:
 		return NewOpenRouter(

@@ -20,6 +20,7 @@ type ChatCompletionRequest struct {
 	MaxTokens        *int            `json:"max_tokens,omitempty"`
 	PresencePenalty  *float64        `json:"presence_penalty,omitempty"`
 	FrequencyPenalty *float64        `json:"frequency_penalty,omitempty"`
+	ReasoningEffort  string          `json:"reasoning_effort,omitempty"` // e.g. "none"|"low"|"medium"|"high"
 	Tools            []Tool          `json:"tools,omitempty"`
 	ToolChoice       json.RawMessage `json:"tool_choice,omitempty"` // string or object
 	User             string          `json:"user,omitempty"`

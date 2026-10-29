@@ -72,6 +72,8 @@ func (h *ChatHandler) handleNonStream(c echo.Context, req *domain.ChatCompletion
 		return callErr
 	})
 	if err != nil {
+		h.logger.ErrorContext(ctx, "chat: routing failed",
+			slog.String("model", req.OriginalModel), slog.String("error", err.Error()))
 		return mapProviderError(err)
 	}
 
@@ -92,6 +94,8 @@ func (h *ChatHandler) handleStream(c echo.Context, req *domain.ChatCompletionReq
 		return chanErr
 	})
 	if err != nil {
+		h.logger.ErrorContext(ctx, "chat: routing failed",
+			slog.String("model", req.OriginalModel), slog.String("error", err.Error()))
 		return mapProviderError(err)
 	}
 

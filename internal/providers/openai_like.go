@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -201,20 +202,33 @@ func (p *openAILikeProvider) setAuthHeaders(req *http.Request) {
 }
 
 // mapHTTPError converts upstream HTTP error codes to domain sentinel errors.
+// The upstream error body (bounded) is included so failures carry their real
+// cause instead of a bare status code.
 func mapHTTPError(resp *http.Response) error {
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
+	detail := readErrorSnippet(resp)
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		return fmt.Errorf("%w: HTTP 401", domain.ErrInvalidKey)
+		return fmt.Errorf("%w: HTTP 401: %s", domain.ErrInvalidKey, detail)
 	case http.StatusTooManyRequests:
-		return fmt.Errorf("%w: HTTP 429", domain.ErrRateLimited)
+		return fmt.Errorf("%w: HTTP 429: %s", domain.ErrRateLimited, detail)
 	case http.StatusServiceUnavailable:
-		return fmt.Errorf("%w: HTTP 503", domain.ErrProviderOverloaded)
+		return fmt.Errorf("%w: HTTP 503: %s", domain.ErrProviderOverloaded, detail)
 	default:
-		return fmt.Errorf("%w: HTTP %d", domain.ErrUpstreamError, resp.StatusCode)
+		return fmt.Errorf("%w: HTTP %d: %s", domain.ErrUpstreamError, resp.StatusCode, detail)
 	}
+}
+
+// readErrorSnippet drains a bounded prefix of the upstream error body.
+func readErrorSnippet(resp *http.Response) string {
+	b, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+	s := strings.TrimSpace(string(b))
+	if s == "" {
+		return "(empty body)"
+	}
+	return s
 }
 
 // newResponseID generates a unique response ID in OpenAI format.
