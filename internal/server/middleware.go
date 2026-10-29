@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -24,10 +25,21 @@ func NewSlogMiddleware(logger *slog.Logger) echo.MiddlewareFunc {
 			req := c.Request()
 			res := c.Response()
 
+			// Echo's not-found and handler errors are written by HTTPErrorHandler
+			// only after this middleware returns; derive the status from the
+			// error so 404s are not logged with the default 200.
+			status := res.Status
+			if err != nil && !res.Committed {
+				var he *echo.HTTPError
+				if errors.As(err, &he) {
+					status = he.Code
+				}
+			}
+
 			level := slog.LevelInfo
-			if res.Status >= 500 {
+			if status >= 500 {
 				level = slog.LevelError
-			} else if res.Status >= 400 {
+			} else if status >= 400 {
 				level = slog.LevelWarn
 			}
 
@@ -35,7 +47,7 @@ func NewSlogMiddleware(logger *slog.Logger) echo.MiddlewareFunc {
 				slog.String("request_id", res.Header().Get(echo.HeaderXRequestID)),
 				slog.String("method", req.Method),
 				slog.String("path", req.URL.Path),
-				slog.Int("status", res.Status),
+				slog.Int("status", status),
 				slog.Int64("latency_ms", latencyMs),
 				slog.String("user_id", userIDFromCtx(c)),
 				slog.String("client_type", string(clientTypeFromCtx(c))),
