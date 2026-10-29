@@ -20,7 +20,7 @@ func generateKey(t *testing.T) []byte {
 
 func TestEncryptDecryptRoundTrip(t *testing.T) {
 	key := generateKey(t)
-	plaintext := []byte("sk-supersecretapikey1234567890")
+	plaintext := []byte("test-api-key-plaintext-0123456789abcdef")
 
 	ciphertext, err := crypto.Encrypt(plaintext, key)
 	if err != nil {

@@ -27,13 +27,26 @@ go.work.sum
 # Built binary (Makefile output)
 /ya-server
 
-# Local SQLite database (dev) and WAL/SHM sidecar files
-gateway.db
-gateway.db-wal
-gateway.db-shm
+# SQLite databases (any name) and WAL/SHM sidecar files
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
 
-# env file
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+
+# env files (the tracked .env.example is the only exception)
 .env
+.env.*
+!.env.example
+
+# AI agent session directories
+.zcode/
+.crush/
 
 # Editor/IDE
 # .idea/
